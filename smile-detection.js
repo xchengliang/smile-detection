@@ -78,6 +78,40 @@ function startGame() {
   }, 10000);
 }
 
+function getBoxFromPoints(points) {
+  const box = {
+    bottom: -Infinity,
+    left: Infinity,
+    right: -Infinity,
+    top: Infinity,
+
+    get center() {
+      return {
+        x: this.left + this.width / 2,
+        y: this.top + this.height / 2,
+      };
+    },
+
+    get height() {
+      return this.bottom - this.top;
+    },
+
+    get width() {
+      return this.right - this.left;
+    },
+  };
+
+  for (const point of points) {
+    box.left = Math.min(box.left, point.x);
+    box.right = Math.max(box.right, point.x);
+
+    box.bottom = Math.max(box.bottom, point.y);
+    box.top = Math.min(box.top, point.y);
+  }
+
+  return box;
+}
+
 // Function to initialize smile detection
 async function startSmileDetection() {
   try {
@@ -117,6 +151,8 @@ async function startSmileDetection() {
     // Process the video feed for smile detection
     video.addEventListener("play", () => {
       const canvas = faceapi.createCanvasFromMedia(video);
+      const context = canvas.getContext('2d');
+
       document.getElementById('multi').append(canvas);
 
       // Set canvas position to absolute
@@ -143,6 +179,71 @@ async function startSmileDetection() {
             canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
             faceapi.draw.drawDetections(canvas, resizedDetections);
             faceapi.draw.drawFaceExpressions(canvas, resizedDetections);
+
+            //change here
+            for (const face of detections) {
+              const features = {
+                jaw: face.landmarks.positions.slice(0, 17),
+                eyebrowLeft: face.landmarks.positions.slice(17, 22),
+                eyebrowRight: face.landmarks.positions.slice(22, 27),
+                noseBridge: face.landmarks.positions.slice(27, 31),
+                nose: face.landmarks.positions.slice(31, 36),
+                eyeLeft: face.landmarks.positions.slice(36, 42),
+                eyeRight: face.landmarks.positions.slice(42, 48),
+                lipOuter: face.landmarks.positions.slice(48, 60),
+                lipInner: face.landmarks.positions.slice(60),
+              }
+              for (const eye of [features.eyeLeft, features.eyeRight]) {
+                const eyeBox = getBoxFromPoints(eye);
+                const fontSize = 6 * eyeBox.height;
+
+                //context.font = `${fontSize}px/${fontSize}px serif`;
+                //context.textDrawingMode = "glyph"
+                //context.font = "20px 'Segoe UI Emoji'";
+                //const emojis = ["😀"];
+                //emojis.forEach((emoji, i) => {
+                  //context.fillText(emoji, eyeBox.center.x, eyeBox.center.y + 0.6 * fontSize);
+                //
+                 // });
+
+                var imgObj = new Image();
+                //imgObj.src = 'https://png.pngtree.com/png-vector/20220602/ourmid/pngtree-black-sunglass-vector-on-transparent-background-png-image_4764419.png'
+                imgObj.src = 'sunglass.png'
+
+                imgObj.onload = function() {
+                  //var ctx = cvs.getContext('2d');
+                  const {x, y, width, height} = face.detection.box;
+
+                  context.drawImage(this, x- width*(1/2), y, width, 100);
+
+                  //context.textAlign = 'center';
+                  //context.textBaseline = 'bottom';
+
+                  //context.fillStyle = '#000';
+                  //context.fillText('😊', eyeBox.center.x, eyeBox.center.y + 0.6 * fontSize);
+                }
+              }
+
+              var imgObj2 = new Image();
+              //imgObj.src = 'https://png.pngtree.com/png-vector/20220602/ourmid/pngtree-black-sunglass-vector-on-transparent-background-png-image_4764419.png'
+              imgObj.src = 'sunglass.png'
+
+              imgObj.onload = function() {
+
+
+                imgObj.width = 200;
+                imgObj.height = 150;
+                context.drawImage(img, 0, 0, imgObj.width, imgObj.height);
+
+                //var ctx = cvs.getContext('2d');
+                //width = eyeBox.width *2
+                //height = eyeBox.height
+                //context.drawImage(this, eyeBox.center.x, eyeBox.center.y);
+                //ctx.drawImage(this, 0, 0,1024,768);//改变图片的大小到1024*768
+                //context.drawImage(this, eyeBox.center.x, eyeBox.center.y, 3,1);
+              }
+            }
+
 
             if (resizedDetections.length >= 1) {
               if (resizedDetections[0].expressions.happy > 0.7) {
